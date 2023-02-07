@@ -1022,7 +1022,7 @@ impl Application {
                         let language_server =
                             self.editor.language_servers.get_by_id(server_id).unwrap();
 
-                        Some(Ok(json!(language_server.workspace_folders())))
+                        Some(Ok(json!(&*language_server.workspace_folders().await)))
                     }
                     Ok(MethodCall::ShowMessageRequest(params)) => {
                         if let Some(actions) = params.actions {
