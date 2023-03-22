@@ -894,6 +894,7 @@ impl<T: Item + 'static> Component for Picker<T> {
                 offset: 0,
                 selected: Some(cursor),
             },
+            self.truncate_start,
         );
     }
 
