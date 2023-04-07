@@ -173,7 +173,7 @@ impl Application {
                 std::env::set_current_dir(first).context("set current dir")?;
                 editor.new_file(Action::VerticalSplit);
                 let picker = ui::file_picker(".".into(), &config.load().editor);
-                compositor.push(Box::new(overlayed(picker)));
+                compositor.push(Box::new(overlaid(picker)));
             } else {
                 let nr_of_files = args.files.len();
                 for (i, (file, pos)) in args.files.into_iter().enumerate() {
