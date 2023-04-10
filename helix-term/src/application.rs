@@ -1086,8 +1086,7 @@ impl Application {
                                     None => self
                                         .editor
                                         .language_servers
-                                        .get_by_id(server_id)
-                                        .unwrap()
+                                        .get_by_id(server_id)?
                                         .config()?,
                                 };
                                 if let Some(section) = item.section.as_ref() {
