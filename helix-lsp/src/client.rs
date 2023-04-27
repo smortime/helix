@@ -1172,6 +1172,7 @@ impl Client {
         &self,
         text_document: lsp::TextDocumentIdentifier,
         position: lsp::Position,
+        include_declaration: bool,
         work_done_token: Option<lsp::ProgressToken>,
     ) -> Option<impl Future<Output = Result<Value>>> {
         let capabilities = self.capabilities.get().unwrap();
@@ -1188,7 +1189,7 @@ impl Client {
                 position,
             },
             context: lsp::ReferenceContext {
-                include_declaration: true,
+                include_declaration,
             },
             work_done_progress_params: lsp::WorkDoneProgressParams { work_done_token },
             partial_result_params: lsp::PartialResultParams {
