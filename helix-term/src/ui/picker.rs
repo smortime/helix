@@ -256,12 +256,10 @@ impl<T: Item + 'static> FilePicker<T> {
                             log::info!("highlighting picker item failed");
                             return
                         };
-                        log::info!("hmm1");
                         let Some(Overlay { content: picker, .. }) = compositor.find::<Overlay<Self>>() else {
                             log::info!("picker closed before syntax highlighting finished");
                             return
                         };
-                        log::info!("hmm2");
                         // Try to find a document in the cache
                         let doc = match current_file {
                             PathOrId::Id(doc_id) => doc_mut!(editor, &doc_id),
@@ -270,7 +268,6 @@ impl<T: Item + 'static> FilePicker<T> {
                                 _ => return,
                             },
                         };
-                        log::info!("yay");
                         doc.syntax = Some(syntax);
                     };
                     Callback::EditorCompositor(Box::new(callback))
