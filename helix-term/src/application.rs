@@ -235,8 +235,14 @@ impl Application {
         #[cfg(windows)]
         let signals = futures_util::stream::empty();
         #[cfg(not(windows))]
-        let signals = Signals::new([signal::SIGTSTP, signal::SIGCONT, signal::SIGUSR1])
-            .context("build signal handler")?;
+        let signals = Signals::new([
+            signal::SIGTSTP,
+            signal::SIGCONT,
+            signal::SIGUSR1,
+            signal::SIGTERM,
+            signal::SIGINT,
+        ])
+        .context("build signal handler")?;
 
         let app = Self {
             compositor,
@@ -322,7 +328,9 @@ impl Application {
                 biased;
 
                 Some(signal) = self.signals.next() => {
-                    self.handle_signals(signal).await;
+                    if !self.handle_signals(signal).await {
+                        return false;
+                    };
                 }
                 Some(event) = input_stream.next() => {
                     self.handle_terminal_events(event).await;
@@ -446,10 +454,12 @@ impl Application {
 
     #[cfg(windows)]
     // no signal handling available on windows
-    pub async fn handle_signals(&mut self, _signal: ()) {}
+    pub async fn handle_signals(&mut self, _signal: ()) -> bool {
+        true
+    }
 
     #[cfg(not(windows))]
-    pub async fn handle_signals(&mut self, signal: i32) {
+    pub async fn handle_signals(&mut self, signal: i32) -> bool {
         match signal {
             signal::SIGTSTP => {
                 self.restore_term().unwrap();
@@ -503,8 +513,14 @@ impl Application {
                 self.refresh_config();
                 self.render().await;
             }
+            signal::SIGTERM | signal::SIGINT => {
+                self.restore_term().unwrap();
+                return false;
+            }
             _ => unreachable!(),
         }
+
+        true
     }
 
     pub async fn handle_idle_timeout(&mut self) {
