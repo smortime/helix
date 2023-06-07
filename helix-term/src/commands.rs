@@ -2708,6 +2708,9 @@ impl ui::menu::Item for MappableCommand {
 }
 
 pub fn command_palette(cx: &mut Context) {
+    let register = cx.register;
+    let count = cx.count;
+
     cx.callback = Some(Box::new(
         move |compositor: &mut Compositor, cx: &mut compositor::Context| {
             let keymap = compositor.find::<ui::EditorView>().unwrap().keymaps.map()
@@ -2726,8 +2729,8 @@ pub fn command_palette(cx: &mut Context) {
             let picker = Picker::new(commands, keymap, move |cx, mappable_command, _action| {
                 let Some(command) = mappable_command else { return };
                 let mut ctx = Context {
-                    register: None,
-                    count: std::num::NonZeroUsize::new(1),
+                    register,
+                    count,
                     editor: cx.editor,
                     callback: None,
                     on_next_key_callback: None,
