@@ -2,7 +2,7 @@ use super::{Context, Editor};
 use crate::{
     compositor::{self, Compositor},
     job::{Callback, Jobs},
-    ui::{self, overlay::overlaid, FilePicker, Picker, Popup, Prompt, PromptEvent, Text},
+    ui::{self, overlay::overlaid, Picker, Popup, Prompt, PromptEvent, Text},
 };
 use dap::{StackFrame, Thread, ThreadStates};
 use helix_core::syntax::{DebugArgumentValue, DebugConfigCompletion, DebugTemplate};
@@ -91,7 +91,7 @@ fn thread_picker(
                     Some((path.into(), pos))
                 },
             );
-            let picker = FilePicker::new(threads, thread_states, move |cx, thread, _action| {
+            let picker = Picker::new(threads, thread_states, move |cx, thread, _action| {
                 callback_fn(cx.editor, thread)
             })
             .with_preview(move |editor, thread| {
@@ -745,7 +745,7 @@ pub fn dap_switch_stack_frame(cx: &mut Context) {
 
     let frames = debugger.stack_frames[&thread_id].clone();
 
-    let picker = FilePicker::new(frames, (), move |cx, stack_frame, _action| {
+    let picker = Picker::new(frames, (), move |cx, stack_frame, _action| {
             let Some(frame) = stack_frame else { return };
         let debugger = debugger!(cx.editor);
         // TODO: this should be simpler to find
