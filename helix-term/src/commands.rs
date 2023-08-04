@@ -4182,7 +4182,7 @@ fn format_selections(cx: &mut Context) {
         })
     else {
         cx.editor
-            .set_error("No configured language server does not support range formatting");
+            .set_error("No configured language server supports range formatting");
         return;
     };
 
