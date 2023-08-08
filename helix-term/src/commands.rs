@@ -2200,8 +2200,8 @@ fn global_search(cx: &mut Context) {
                     current_path,
                     move |cx, file_result, action| {
                         let Some(FileResult { path, line_num }) = file_result else { return };
-                        match cx.editor.open(path, action) {
-                            Ok(_) => {}
+                        let doc = match cx.editor.open(path, action) {
+                            Ok(id) => doc_mut!(cx.editor, &id),
                             Err(e) => {
                                 cx.editor.set_error(format!(
                                     "Failed to open file '{}': {}",
@@ -2210,10 +2210,9 @@ fn global_search(cx: &mut Context) {
                                 ));
                                 return;
                             }
-                        }
-
+                        };
                         let line_num = *line_num;
-                        let (view, doc) = current!(cx.editor);
+                        let view = view_mut!(cx.editor);
                         let text = doc.text();
                         if line_num >= text.len_lines() {
                             cx.editor.set_error("The line you jumped to does not exist anymore because the file has changed.");
@@ -2223,7 +2222,9 @@ fn global_search(cx: &mut Context) {
                         let end = text.line_to_char((line_num + 1).min(text.len_lines()));
 
                         doc.set_selection(view.id, Selection::single(start, end));
-                        align_view(doc, view, Align::Center);
+                        if action.align_view(view, doc.id()){
+                            align_view(doc, view, Align::Center);
+                        }
                     }).with_preview(|_editor, FileResult { path, line_num }| {
                         Some((path.clone().into(), Some((*line_num, *line_num))))
                     });
@@ -2745,9 +2746,11 @@ fn jumplist_picker(cx: &mut Context) {
             let Some(meta) = jump_meta else { return };
             cx.editor.switch(meta.id, action);
             let config = cx.editor.config();
-            let (view, doc) = current!(cx.editor);
+            let (view, doc) = (view_mut!(cx.editor), doc_mut!(cx.editor, &meta.id));
             doc.set_selection(view.id, meta.selection.clone());
-            view.ensure_cursor_in_view_center(doc, config.scrolloff);
+            if action.align_view(view, doc.id()) {
+                view.ensure_cursor_in_view_center(doc, config.scrolloff);
+            }
         },
     )
     .with_preview(|editor, meta| {
