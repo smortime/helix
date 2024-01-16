@@ -64,7 +64,7 @@ impl PathOrId {
     fn get_canonicalized(self) -> Self {
         use PathOrId::*;
         match self {
-            Path(path) => Path(helix_core::path::get_canonicalized_path(&path)),
+            Path(path) => Path(helix_stdx::path::canonicalize(path)),
             Id(id) => Id(id),
             Text(rope) => Text(rope),
         }
