@@ -549,6 +549,7 @@ pub enum MethodCall {
     WorkspaceConfiguration(lsp::ConfigurationParams),
     RegisterCapability(lsp::RegistrationParams),
     UnregisterCapability(lsp::UnregistrationParams),
+    ShowDocument(lsp::ShowDocumentParams),
     ShowMessageRequest(lsp::ShowMessageRequestParams),
 }
 
@@ -576,6 +577,10 @@ impl MethodCall {
             lsp::request::UnregisterCapability::METHOD => {
                 let params: lsp::UnregistrationParams = params.parse()?;
                 Self::UnregisterCapability(params)
+            }
+            lsp::request::ShowDocument::METHOD => {
+                let params: lsp::ShowDocumentParams = params.parse()?;
+                Self::ShowDocument(params)
             }
             lsp::request::ShowMessageRequest::METHOD => {
                 Self::ShowMessageRequest(params.parse::<lsp::ShowMessageRequestParams>()?)
