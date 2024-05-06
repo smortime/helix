@@ -190,9 +190,9 @@ pub fn dap_start_impl(
 
     let mut args: HashMap<&str, Value> = HashMap::new();
 
-    if let Some(params) = params {
-        for (k, t) in &template.args {
-            let mut value = t.clone();
+    for (k, t) in &template.args {
+        let mut value = t.clone();
+        if let Some(ref params) = params {
             for (i, x) in params.iter().enumerate() {
                 let mut param = x.to_string();
                 if let Some(DebugConfigCompletion::Advanced(cfg)) = template.completion.get(i) {
@@ -216,21 +216,21 @@ pub fn dap_start_impl(
                     DebugArgumentValue::Boolean(_) => value,
                 };
             }
+        }
 
-            match value {
-                DebugArgumentValue::String(string) => {
-                    if let Ok(integer) = string.parse::<usize>() {
-                        args.insert(k, to_value(integer).unwrap());
-                    } else {
-                        args.insert(k, to_value(string).unwrap());
-                    }
+        match value {
+            DebugArgumentValue::String(string) => {
+                if let Ok(integer) = string.parse::<usize>() {
+                    args.insert(k, to_value(integer).unwrap());
+                } else {
+                    args.insert(k, to_value(string).unwrap());
                 }
-                DebugArgumentValue::Array(arr) => {
-                    args.insert(k, to_value(arr).unwrap());
-                }
-                DebugArgumentValue::Boolean(bool) => {
-                    args.insert(k, to_value(bool).unwrap());
-                }
+            }
+            DebugArgumentValue::Array(arr) => {
+                args.insert(k, to_value(arr).unwrap());
+            }
+            DebugArgumentValue::Boolean(bool) => {
+                args.insert(k, to_value(bool).unwrap());
             }
         }
     }
@@ -291,17 +291,23 @@ pub fn dap_launch(cx: &mut Context) {
         (),
         |cx, debug_template, _action| {
             let Some(template) = debug_template else { return };
-            let completions = template.completion.clone();
-            let name = template.name.clone();
-            let callback = Box::pin(async move {
-                let call: Callback =
-                    Callback::EditorCompositor(Box::new(move |_editor, compositor| {
-                        let prompt = debug_parameter_prompt(completions, name, Vec::new());
-                        compositor.push(Box::new(prompt));
-                    }));
-                Ok(call)
-            });
-            cx.jobs.callback(callback);
+            if template.completion.is_empty() {
+                if let Err(err) = dap_start_impl(cx, Some(&template.name), None, None) {
+                    cx.editor.set_error(err.to_string());
+                }
+            } else {
+                let completions = template.completion.clone();
+                let name = template.name.clone();
+                let callback = Box::pin(async move {
+                    let call: Callback =
+                        Callback::EditorCompositor(Box::new(move |_editor, compositor| {
+                            let prompt = debug_parameter_prompt(completions, name, Vec::new());
+                            compositor.push(Box::new(prompt));
+                        }));
+                    Ok(call)
+                });
+                cx.jobs.callback(callback);
+            }
         },
     ))));
 }
