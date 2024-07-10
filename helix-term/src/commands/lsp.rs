@@ -245,15 +245,21 @@ type SymbolPicker = Picker<SymbolInformationItem>;
 
 fn sym_picker(symbols: Vec<SymbolInformationItem>, current_path: Option<lsp::Url>) -> SymbolPicker {
     // TODO: drop current_path comparison and instead use workspace: bool flag?
-    Picker::new(symbols, current_path, move |cx, symbol_information, action| {
-            let Some(symbol) = symbol_information else { return };
-        jump_to_location(
-            cx.editor,
-            &item.symbol.location,
-            item.offset_encoding,
-            action,
-        );
-    })
+    Picker::new(
+        symbols,
+        current_path,
+        move |cx, symbol_information, action| {
+            let Some(item) = symbol_information else {
+                return;
+            };
+            jump_to_location(
+                cx.editor,
+                &item.symbol.location,
+                item.offset_encoding,
+                action,
+            );
+        },
+    )
     .with_preview(move |_editor, item| Some(location_to_file_location(&item.symbol.location)))
     .truncate_start(false)
 }
@@ -298,7 +304,14 @@ fn diag_picker(
         flat_diag,
         (styles, format),
         move |cx, picker_diagnostic, action| {
-            let Some(PickerDiagnostic { path, diag }) = picker_diagnostic else { return };
+            let Some(PickerDiagnostic {
+                path,
+                diag,
+                offset_encoding,
+            }) = picker_diagnostic
+            else {
+                return;
+            };
             jump_to_position(cx.editor, path, diag.range, *offset_encoding, action)
         },
     )
@@ -822,7 +835,7 @@ fn goto_impl(
         _locations => {
             let picker = Picker::new(locations, cwdir, move |cx, location, action| {
                 let Some(l) = location else { return };
-                    jump_to_location(cx.editor, l, offset_encoding, action)
+                jump_to_location(cx.editor, l, offset_encoding, action)
             })
             .with_preview(move |_editor, location| Some(location_to_file_location(location)));
             compositor.push(Box::new(overlaid(picker)));

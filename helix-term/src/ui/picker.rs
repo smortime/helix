@@ -35,8 +35,8 @@ use std::{
 use crate::ui::{Prompt, PromptEvent};
 use helix_core::{
     char_idx_at_visual_offset, fuzzy::MATCHER, movement::Direction,
-    text_annotations::TextAnnotations, unicode::segmentation::UnicodeSegmentation, Position,
-   Rope, Syntax,
+    text_annotations::TextAnnotations, unicode::segmentation::UnicodeSegmentation, Position, Rope,
+    Syntax,
 };
 use helix_view::{
     editor::Action,
@@ -258,7 +258,7 @@ impl<T: Item + 'static> Picker<T> {
     pub fn with_stream(
         matcher: Nucleo<T>,
         injector: Injector<T>,
-        callback_fn: impl Fn(&mut Context, &T, Action) + 'static,
+        callback_fn: impl Fn(&mut Context, Option<&T>, Action) + 'static,
     ) -> Self {
         Self::with(matcher, injector.editor_data, injector.shutown, callback_fn)
     }
@@ -267,7 +267,7 @@ impl<T: Item + 'static> Picker<T> {
         matcher: Nucleo<T>,
         editor_data: Arc<T::Data>,
         shutdown: Arc<AtomicBool>,
-        callback_fn: impl Fn(&mut Context, &T, Action) + 'static,
+        callback_fn: impl Fn(&mut Context, Option<&T>, Action) + 'static,
     ) -> Self {
         let prompt = Prompt::new(
             "".into(),
@@ -470,8 +470,8 @@ impl<T: Item + 'static> Picker<T> {
                 Some(CachedPreview::Document(ref mut doc)) => doc,
                 _ => return EventResult::Consumed(None),
             },
-        PathOrId::Text(_rope) => None,
-            };
+            PathOrId::Text(_) => return EventResult::Consumed(None),
+        };
 
         let mut callback: Option<compositor::Callback> = None;
 
@@ -518,6 +518,7 @@ impl<T: Item + 'static> Picker<T> {
                                 }
                                 _ => return,
                             },
+                            PathOrId::Text(_rope) => return,
                         };
                         doc.syntax = Some(syntax);
                     };
@@ -901,26 +902,18 @@ impl<T: Item + 'static + Send + Sync> Component for Picker<T> {
             }
             key!(Esc) | ctrl!('c') => return close_fn(self),
             alt!(Enter) => {
-                if let Some(option) = self.selection() {
-                    (self.callback_fn)(ctx, option, Action::Load);
-                }
+                (self.callback_fn)(ctx, self.selection(), Action::Load);
             }
             key!(Enter) => {
-                if let Some(option) = self.selection() {
-                    (self.callback_fn)(ctx, option, Action::Replace);
-                }
+                (self.callback_fn)(ctx, self.selection(), Action::Replace);
                 return close_fn(self);
             }
             ctrl!('s') => {
-                if let Some(option) = self.selection() {
-                    (self.callback_fn)(ctx, option, Action::HorizontalSplit);
-                }
+                (self.callback_fn)(ctx, self.selection(), Action::HorizontalSplit);
                 return close_fn(self);
             }
             ctrl!('v') => {
-                if let Some(option) = self.selection() {
-                    (self.callback_fn)(ctx, option, Action::VerticalSplit);
-                }
+                (self.callback_fn)(ctx, self.selection(), Action::VerticalSplit);
                 return close_fn(self);
             }
             ctrl!('t') => {

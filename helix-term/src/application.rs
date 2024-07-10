@@ -26,7 +26,7 @@ use crate::{
     handlers,
     job::Jobs,
     keymap::Keymaps,
-    ui::{self, overlay::overlayed, FileLocation, FilePicker, Popup},
+    ui::{self, overlay::overlaid, FileLocation, Picker, Popup},
 };
 
 use log::{debug, error, info, warn};
@@ -1010,12 +1010,12 @@ impl Application {
                                     .map(|err| err.failed_change_idx as u32),
                             })))
                         } else {
-                            Err(helix_lsp::jsonrpc::Error {
+                            Some(Err(helix_lsp::jsonrpc::Error {
                                 code: helix_lsp::jsonrpc::ErrorCode::InvalidRequest,
                                 message: "Server must be initialized to request workspace edits"
                                     .to_string(),
                                 data: None,
-                            })
+                            }))
                         }
                     }
                     Ok(MethodCall::WorkspaceFolders) => {
@@ -1035,10 +1035,8 @@ impl Application {
                             };
                             let message = format!("{}: {}", message_type, &params.message);
                             let rope = Rope::from(message);
-                            let picker = FilePicker::new(
-                                actions,
-                                (),
-                                move |ctx, message_action, _event| {
+                            let picker =
+                                Picker::new(actions, (), move |ctx, message_action, _event| {
                                     let server_from_id =
                                         ctx.editor.language_servers.get_by_id(server_id);
                                     let language_server = match server_from_id {
@@ -1058,12 +1056,14 @@ impl Application {
                                     tokio::spawn(
                                         language_server.reply(call_id.clone(), Ok(response)),
                                     );
-                                },
-                                move |_editor, _value| {
-                                    let file_location: FileLocation = (rope.clone().into(), None);
-                                    Some(file_location)
-                                },
-                            );
+                                })
+                                .with_preview(
+                                    move |_editor, _value| {
+                                        let file_location: FileLocation =
+                                            (rope.clone().into(), None);
+                                        Some(file_location)
+                                    },
+                                );
                             let popup_id = "show-message-request";
                             let popup = Popup::new(popup_id, picker);
                             self.compositor.replace_or_push(popup_id, popup);
@@ -1129,7 +1129,7 @@ impl Application {
                             }
                         }
 
-                        Ok(serde_json::Value::Null)
+                        Some(Ok(serde_json::Value::Null))
                     }
                     Ok(MethodCall::UnregisterCapability(params)) => {
                         for unreg in params.unregisterations {
@@ -1152,7 +1152,7 @@ impl Application {
                         let offset_encoding = language_server.offset_encoding();
 
                         let result = self.handle_show_document(params, offset_encoding);
-                        Ok(json!(result))
+                        Some(Ok(json!(result)))
                     }
                 };
 
